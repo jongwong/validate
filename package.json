@@ -1,0 +1,32 @@
+{
+  "name": "validate",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "start": "webpack"
+  },
+  "keywords": [
+    "validate",
+    "asyn validate",
+    "Dynamic validate",
+    "Sync validate",
+    "mutil",
+    "power"
+  ],
+  "author": "JongWong",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/jasmine": "^3.4.6",
+    "jasmine": "^3.5.0",
+    "karma": "~4.1.0",
+    "karma-chrome-launcher": "~2.2.0",
+    "karma-coverage": "^2.0.1",
+    "karma-jasmine": "~2.0.1",
+    "karma-jasmine-html-reporter": "^1.4.0",
+    "karma-webpack": "^4.0.2",
+    "ts-loader": "^6.2.1",
+    "typescript": "^3.6.4",
+    "webpack": "^4.41.2",
+    "webpack-cli": "^3.3.9"
+  }
+}
