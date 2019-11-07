@@ -37,8 +37,5 @@ module.exports = function (config) {
     singleRun: false,
     restartOnFileChange: true,
     webpack: webpackConfig({"NODE_ENV": "development"}),
-    webpackMiddleware: {
-      noInfo: true
-    }
   });
 };

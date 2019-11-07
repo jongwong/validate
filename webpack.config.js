@@ -3,7 +3,8 @@ const { resolve } = require("path");
 module.exports = function(env) {
   let config = {
     entry: {
-      index: "./src/index.ts"
+      index: "./src/index.ts",
+      "index.browser": "./src/index.browser.ts"
     },
     output: {
       path: resolve("./dist"),
@@ -19,7 +20,12 @@ module.exports = function(env) {
       }
     },
     module: {
-      rules: [{ test: /\.tsx?$/, loader: "ts-loader" }]
+      rules: [{ test: /\.tsx?$/, use: [{
+          loader: 'ts-loader',
+          options: {
+            configFile: resolve(__dirname,'./tsconfig.json')
+          }
+        }] }]
     },
     plugins: []
   };

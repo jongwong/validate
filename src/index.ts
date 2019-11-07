@@ -1,3 +1,2 @@
-export function add(a: number, b: number) {
-  return a + b;
-}
+import { Validate } from "@/core/validate";
+export { Validate };

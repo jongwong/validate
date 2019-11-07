@@ -1,16 +1,16 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "module": "es2015",
+    "target": "ES5",
+    "module": "ES6",
     "allowJs": false,
-    "sourceMap": true,
     "strict": true,
+    /*"declaration": true,*/
+    "inlineSourceMap": true,
     "moduleResolution": "node",
     "baseUrl": "./",
     "paths": {
       "@/*": ["src/*"]
     },
-    "esModuleInterop": true,
-    "inlineSourceMap": true
+    "esModuleInterop": true
   }
 }
