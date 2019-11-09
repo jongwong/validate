@@ -1,2 +1,2 @@
 import { Validate } from "@/core/validate";
-export { Validate };
+module.exports= { Validate };

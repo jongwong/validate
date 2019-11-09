@@ -11,10 +11,11 @@ export interface KeyRules {
 
 export interface ValidateConfig {
   noMessage?: boolean;
+  rawResult?: boolean;
 }
 
 export class Validate {
-  private config: ValidateConfig = { noMessage: false };
+  config: ValidateConfig = { noMessage: false, rawResult: false };
   constructor() {}
   register(name: string, ruleResolve: Function) {
     (this as { [key: string]: any })[name] = this.registerFatory(
@@ -26,16 +27,44 @@ export class Validate {
   get(name: string) {
     return (this as { [key: string]: any })[name];
   }
+
+  setRules(rules: Array<Rule> | Rule) {
+    const self = this;
+    return {
+      validate: function(values: any, isMulti?: boolean) {
+        return self.dispatcher("setRules", values, {
+          rules: rules,
+          isMulti: isMulti
+        });
+      }
+    };
+  }
+  setKeyRules(keyRules: KeyRules) {
+    const self = this;
+    return {
+      validate: function(values: any) {
+        return self.dispatcher("setKeyRules", values, { keyRules: keyRules });
+      }
+    };
+  }
   validateRulesHandle(ruleOrRules: Array<Rule> | Rule, value: any) {
-    let result: { [key: string]: any };
+    let result: any;
     if (ruleOrRules instanceof Array) {
-      result = {};
-      ruleOrRules.forEach(rule => {
+      for (let i = 0; i < ruleOrRules.length; i++) {
+        const rule = ruleOrRules[i];
         const validateName = rule.name;
-        result[validateName] = (this as { [key: string]: any })
+        const temp = (this as { [key: string]: any })
           [validateName](rule)
           .validate(value);
-      });
+        if (!this.config.rawResult) {
+          if (temp.hasError) {
+            result = temp;
+            break;
+          }
+        } else {
+          (result as { [key: string]: any })[validateName] = temp;
+        }
+      }
     } else {
       const rule = ruleOrRules;
       const validateName = rule.name;
@@ -46,57 +75,67 @@ export class Validate {
     return result;
   }
 
-  validateaValuesHandle(
+  validateValuesHandle(
     ruleOrRules: Array<Rule> | Rule,
     values: any,
     isMulti?: boolean
   ) {
     let result: any;
     if (isMulti) {
-      result = {} as { [key: string]: any };
       let keys = Object.keys(values);
+      if (keys.length > 0) {
+        result = {} as { [key: string]: any };
+      }
       keys.forEach(key => {
         let value = values[key];
-        result[key] = this.validateRulesHandle(ruleOrRules, value);
+
+        if (value) {
+          const temp = this.validateRulesHandle(ruleOrRules, value);
+          if (temp) {
+            result[key] = temp;
+          } else {
+            result[key] = {};
+          }
+        } else {
+          result[key] = {};
+        }
       });
     } else {
       result = this.validateRulesHandle(ruleOrRules, values);
     }
     return result;
   }
+  dispatcher(type: string, values: any, options: any) {
+    let result: any;
+    if (type === "setKeyRules") {
+      const keyRules = options.keyRules;
+      const keys = Object.keys(keyRules);
+      if (keys.length > 0) {
+        result = {} as { [key: string]: any };
+      }
 
-  setRules(rules: Array<Rule> | Rule) {
-    const self = this;
-    return {
-      validate: function(values: any, isMulti?: boolean) {
-        return self.validateaValuesHandle(rules, values, isMulti);
-      }
-    };
-  }
-  setKeyRules(KeyRules: KeyRules) {
-    const self = this;
-    let keys = Object.keys(KeyRules);
-    return {
-      validate: function(values: any) {
-        let result = {} as { [key: string]: any };
-        keys.forEach(key => {
-          let rules = KeyRules[key];
-          const value = values[key];
-          if (!value) {
-            console.error(`not found option.key: ${key}  at validate(values)`);
-          }
-          result[key] = self.validateRulesHandle(rules, values);
-        });
-        (result as { [key: string]: any })["get"] = function(key: string) {
-          return result[key];
-        };
-        return result;
-      }
-    };
+      keys.forEach(key => {
+        let rules = keyRules[key];
+        const value = values[key];
+        if (!value) {
+          console.error(`not found option.key: ${key}  at validate(values)`);
+        }
+        (result as { [key: string]: any })[key] = this.validateRulesHandle(
+          rules,
+          values
+        );
+      });
+    } else if (type === "setRules") {
+      const rules = options.rules;
+      const isMulti = options.isMulti;
+      result = this.validateValuesHandle(rules, values, isMulti);
+    }
+
+    return result;
   }
   validateFatory(
     validateName: string,
-    rule: AbstractRule | Rule | {[key: string]: any},
+    rule: AbstractRule | Rule | { [key: string]: any },
     ruleResolve: Function
   ) {
     const self = this;
@@ -111,26 +150,38 @@ export class Validate {
 
       let result: any;
       if (isMulti) {
-        result = {} as { [key: string]: any };
         const keys = Object.keys(values);
+
+        if (keys.length > 0) {
+          result = {};
+        }
         keys.forEach(key => {
-          const value = values[key];
-          result[key] = {
+          let value;
+          if (values[key]) {
+            value = values[key];
+          }
+
+          (result as { [key: string]: any })[key] = {
             name: validateName,
+            hasError: !ruleResolve(value, rule),
+            rule: rule,
             value: value,
-            status: ruleResolve(value, rule),
-            message: rule.message
+            ruleResolve: ruleResolve
           };
-          if (!self.config.noMessage) result[key].message = rule.message;
+          if (!self.config.noMessage)
+            (result as { [key: string]: any })[key].message = rule.message;
         });
       } else {
         result = {
           name: validateName,
+          hasError: !ruleResolve(values, rule),
+          rule: rule,
           value: values,
-          status: ruleResolve(values, rule)
+          ruleResolve: ruleResolve
         };
         if (!self.config.noMessage) result.message = rule.message;
       }
+
       return result;
     };
   }
@@ -138,7 +189,7 @@ export class Validate {
   registerFatory(validateName: string, ruleResolve: Function) {
     const self = this;
     if (ruleResolve instanceof Function) {
-      return function(rules: AbstractRule | Rule | {[key: string]: any}) {
+      return function(rules: AbstractRule | Rule | { [key: string]: any }) {
         //定义validate()
 
         let validate = self.validateFatory(validateName, rules, ruleResolve);
